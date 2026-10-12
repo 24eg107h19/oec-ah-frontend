@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { LogIn, UserPlus, Lock, Mail, User as UserIcon, Shield, AlertCircle, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { LogIn, UserPlus, Lock, Mail, User as UserIcon, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const LoginRegister = () => {
@@ -14,11 +14,8 @@ const LoginRegister = () => {
   const [registerName, setRegisterName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
-  const [registerRole, setRegisterRole] = useState('USER');
-
   const { login, register, loading, error, setError } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -42,7 +39,7 @@ const LoginRegister = () => {
       setError('All fields are required.');
       return;
     }
-    const result = await register(registerName, registerEmail, registerPassword, registerRole);
+    const result = await register(registerName, registerEmail, registerPassword);
     if (result.success) {
       if (result.user.role === 'ADMIN') {
         navigate('/admin');
@@ -50,13 +47,6 @@ const LoginRegister = () => {
         navigate('/products');
       }
     }
-  };
-
-  const fillQuickAccount = (email, password) => {
-    setIsLoginTab(true);
-    setLoginEmail(email);
-    setLoginPassword(password);
-    setError(null);
   };
 
   return (
@@ -84,30 +74,6 @@ const LoginRegister = () => {
             <UserPlus size={18} />
             <span>Create Account</span>
           </button>
-        </div>
-
-        {/* Demo Quick Fills */}
-        <div className="demo-credentials-banner">
-          <div className="demo-credentials-header">
-            <Sparkles size={15} />
-            <span>Quick Demo Logins:</span>
-          </div>
-          <div className="demo-buttons">
-            <button
-              type="button"
-              className="btn-demo-tag"
-              onClick={() => fillQuickAccount('admin@shop.com', 'admin123')}
-            >
-              <Shield size={13} /> Admin (admin@shop.com)
-            </button>
-            <button
-              type="button"
-              className="btn-demo-tag"
-              onClick={() => fillQuickAccount('user@shop.com', 'user123')}
-            >
-              <UserIcon size={13} /> Customer (user@shop.com)
-            </button>
-          </div>
         </div>
 
         {/* Error Alert */}
@@ -204,22 +170,6 @@ const LoginRegister = () => {
                   onChange={(e) => setRegisterPassword(e.target.value)}
                   required
                 />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="regRole">Account Type</label>
-              <div className="input-with-icon">
-                <Shield size={18} className="field-icon" />
-                <select
-                  id="regRole"
-                  value={registerRole}
-                  onChange={(e) => setRegisterRole(e.target.value)}
-                  className="role-select"
-                >
-                  <option value="USER">Customer (Shop & Order)</option>
-                  <option value="ADMIN">Administrator (Manage Products & Orders)</option>
-                </select>
               </div>
             </div>
 

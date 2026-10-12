@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,11 +9,19 @@ const api = axios.create({
   },
 });
 
+api.interceptors.request.use((config) => {
+  const accessToken = sessionStorage.getItem('ecommerce_access_token');
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return config;
+});
+
 // Auth API
 export const authService = {
   login: (email, password) => api.post('/auth/login', { email, password }),
-  register: (name, email, password, role = 'USER') =>
-    api.post('/auth/register', { name, email, password, role }),
+  register: (name, email, password) =>
+    api.post('/auth/register', { name, email, password }),
 };
 
 // Products API

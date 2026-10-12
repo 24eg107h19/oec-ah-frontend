@@ -9,13 +9,17 @@ const getAuthErrorMessage = (err, fallback) => {
     return responseMessage;
   }
   if (err?.request) {
-    return 'Cannot connect to the server. Make sure the backend is running at http://localhost:8080 and try again.';
+    return 'Cannot connect to the server. Check that the backend is running and the frontend API URL is configured.';
   }
   return fallback;
 };
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
+    if (!sessionStorage.getItem('ecommerce_access_token')) {
+      localStorage.removeItem('ecommerce_user');
+      return null;
+    }
     try {
       const stored = localStorage.getItem('ecommerce_user');
       return stored ? JSON.parse(stored) : null;
@@ -40,7 +44,11 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       const response = await authService.login(email, password);
-      const userData = response.data;
+      const { accessToken, ...userData } = response.data;
+      if (!accessToken) {
+        throw new Error('The server did not return an access token.');
+      }
+      sessionStorage.setItem('ecommerce_access_token', accessToken);
       setUser(userData);
       setLoading(false);
       return { success: true, user: userData };
@@ -52,12 +60,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, password, role = 'USER') => {
+  const register = async (name, email, password) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await authService.register(name, email, password, role);
-      const userData = response.data;
+      const response = await authService.register(name, email, password);
+      const { accessToken, ...userData } = response.data;
+      if (!accessToken) {
+        throw new Error('The server did not return an access token.');
+      }
+      sessionStorage.setItem('ecommerce_access_token', accessToken);
       setUser(userData);
       setLoading(false);
       return { success: true, user: userData };
@@ -71,6 +83,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
+    sessionStorage.removeItem('ecommerce_access_token');
     localStorage.removeItem('ecommerce_user');
   };
 

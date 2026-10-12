@@ -5,12 +5,14 @@ import { productService } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { formatINR } from '../utils/currency';
+import sampleProducts from '../data/sampleProducts';
 
 const categories = ['All', 'Electronics', 'Fashion', 'Home & Office'];
 
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [usingSampleProducts, setUsingSampleProducts] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'All');
@@ -30,13 +32,19 @@ const Products = () => {
     fetchProducts();
   }, [selectedCategory]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (search = searchTerm, category = selectedCategory) => {
     try {
       setLoading(true);
-      const res = await productService.getAll(searchTerm, selectedCategory);
+      const res = await productService.getAll(search, category);
+      if (!Array.isArray(res?.data)) {
+        throw new Error('Product service returned an invalid product list');
+      }
       setProducts(res.data);
+      setUsingSampleProducts(false);
     } catch (err) {
       console.error('Failed to load products:', err);
+      setProducts(sampleProducts);
+      setUsingSampleProducts(true);
     } finally {
       setLoading(false);
     }
@@ -44,7 +52,7 @@ const Products = () => {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    fetchProducts();
+    fetchProducts(searchTerm, selectedCategory);
   };
 
   const handleCategoryChange = (category) => {
@@ -73,7 +81,14 @@ const Products = () => {
   };
 
   // Sorting
-  const sortedProducts = [...products].sort((a, b) => {
+  const filteredProducts = usingSampleProducts
+    ? products.filter((product) => {
+      const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+      const matchesSearch = product.name.toLowerCase().includes(searchTerm.trim().toLowerCase());
+      return matchesCategory && matchesSearch;
+    })
+    : products;
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
     if (sortBy === 'price-low') return a.price - b.price;
     if (sortBy === 'price-high') return b.price - a.price;
     if (sortBy === 'name') return a.name.localeCompare(b.name);
@@ -95,6 +110,12 @@ const Products = () => {
         <div>
           <h1 className="page-title">Explore Products</h1>
           <p className="page-subtitle">Find premium goods curated for every lifestyle</p>
+          {usingSampleProducts && (
+            <p className="catalog-notice" role="status">
+              Could not connect to the product service. Showing demo products instead; start the
+              backend to load your saved catalog.
+            </p>
+          )}
         </div>
       </div>
 
@@ -116,7 +137,7 @@ const Products = () => {
                 className="clear-search-btn"
                 onClick={() => {
                   setSearchTerm('');
-                  productService.getAll('', selectedCategory).then((res) => setProducts(res.data));
+                  fetchProducts('', selectedCategory);
                 }}
               >
                 &times;
@@ -171,7 +192,7 @@ const Products = () => {
             onClick={() => {
               setSearchTerm('');
               setSelectedCategory('All');
-              productService.getAll('', 'All').then((res) => setProducts(res.data));
+              fetchProducts('', 'All');
             }}
           >
             Reset Filters

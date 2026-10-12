@@ -3,6 +3,17 @@ import { authService } from '../services/api';
 
 const AuthContext = createContext();
 
+const getAuthErrorMessage = (err, fallback) => {
+  const responseMessage = err?.response?.data?.message;
+  if (typeof responseMessage === 'string' && responseMessage.trim()) {
+    return responseMessage;
+  }
+  if (err?.request) {
+    return 'Cannot connect to the server. Make sure the backend is running at http://localhost:8080 and try again.';
+  }
+  return fallback;
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
@@ -34,7 +45,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       return { success: true, user: userData };
     } catch (err) {
-      const message = err.response?.data?.message || 'Login failed. Please check your credentials.';
+      const message = getAuthErrorMessage(err, 'Login failed. Please check your credentials.');
       setError(message);
       setLoading(false);
       return { success: false, message };
@@ -51,7 +62,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       return { success: true, user: userData };
     } catch (err) {
-      const message = err.response?.data?.message || 'Registration failed. Email might already exist.';
+      const message = getAuthErrorMessage(err, 'Registration failed. Please check your details and try again.');
       setError(message);
       setLoading(false);
       return { success: false, message };
